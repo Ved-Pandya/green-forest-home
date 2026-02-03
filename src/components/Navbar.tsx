@@ -1,14 +1,22 @@
 import { Link } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   const navLinks = [
     { name: "Home", href: "/" },
-    { name: "Booking", href: "/booking" },
+    { name: "Book a Room", href: "/booking" },
     { name: "Contact", href: "/contact" },
   ];
 
@@ -34,11 +42,34 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
-            <Link to="/booking">
-              <Button variant="default" size="sm">
-                Book Now
-              </Button>
-            </Link>
+            
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <User className="w-4 h-4 mr-2" />
+                    My Account
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-bookings" className="cursor-pointer">
+                      My Bookings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={signOut} className="cursor-pointer">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link to="/auth">
+                <Button variant="default" size="sm">
+                  Login
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -64,11 +95,36 @@ const Navbar = () => {
                   {link.name}
                 </Link>
               ))}
-              <Link to="/booking" onClick={() => setIsOpen(false)}>
-                <Button variant="default" size="sm" className="w-fit">
-                  Book Now
-                </Button>
-              </Link>
+              
+              {user ? (
+                <>
+                  <Link
+                    to="/my-bookings"
+                    className="text-foreground/80 hover:text-primary transition-colors py-2"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    My Bookings
+                  </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-fit"
+                    onClick={() => {
+                      signOut();
+                      setIsOpen(false);
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <Link to="/auth" onClick={() => setIsOpen(false)}>
+                  <Button variant="default" size="sm" className="w-fit">
+                    Login
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         )}

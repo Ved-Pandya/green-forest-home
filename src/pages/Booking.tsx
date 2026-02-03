@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -9,10 +10,78 @@ import { CalendarIcon, Users, Home } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Booking = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
   const [checkIn, setCheckIn] = useState<Date>();
   const [checkOut, setCheckOut] = useState<Date>();
+  const [roomType, setRoomType] = useState("");
+  const [guests, setGuests] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [specialRequests, setSpecialRequests] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
+      toast({
+        title: "Please sign in",
+        description: "You need to be logged in to make a reservation.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    if (!checkIn || !checkOut || !roomType || !guests || !firstName || !lastName || !email) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    const { error } = await supabase.from("bookings").insert({
+      user_id: user.id,
+      room_type: roomType,
+      guests: parseInt(guests),
+      check_in: format(checkIn, "yyyy-MM-dd"),
+      check_out: format(checkOut, "yyyy-MM-dd"),
+      first_name: firstName,
+      last_name: lastName,
+      email,
+      phone: phone || null,
+      special_requests: specialRequests || null,
+    });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create booking. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Booking Confirmed!",
+        description: "Your reservation has been successfully created.",
+      });
+      navigate("/my-bookings");
+    }
+    
+    setLoading(false);
+  };
 
   return (
     <div className="min-h-screen">
@@ -39,7 +108,7 @@ const Booking = () => {
                 Reservation Details
               </h2>
               
-              <form className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Dates */}
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
@@ -63,6 +132,7 @@ const Booking = () => {
                           selected={checkIn}
                           onSelect={setCheckIn}
                           initialFocus
+                          disabled={(date) => date < new Date()}
                         />
                       </PopoverContent>
                     </Popover>
@@ -88,6 +158,7 @@ const Booking = () => {
                           selected={checkOut}
                           onSelect={setCheckOut}
                           initialFocus
+                          disabled={(date) => date < (checkIn || new Date())}
                         />
                       </PopoverContent>
                     </Popover>
@@ -98,7 +169,7 @@ const Booking = () => {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm text-muted-foreground mb-2 block">Room Type</label>
-                    <Select>
+                    <Select value={roomType} onValueChange={setRoomType}>
                       <SelectTrigger>
                         <Home className="mr-2 h-4 w-4" />
                         <SelectValue placeholder="Select room" />
@@ -113,7 +184,7 @@ const Booking = () => {
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground mb-2 block">Guests</label>
-                    <Select>
+                    <Select value={guests} onValueChange={setGuests}>
                       <SelectTrigger>
                         <Users className="mr-2 h-4 w-4" />
                         <SelectValue placeholder="Number of guests" />
@@ -134,11 +205,21 @@ const Booking = () => {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm text-muted-foreground mb-2 block">First Name</label>
-                      <Input placeholder="John" />
+                      <Input 
+                        placeholder="John" 
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required
+                      />
                     </div>
                     <div>
                       <label className="text-sm text-muted-foreground mb-2 block">Last Name</label>
-                      <Input placeholder="Doe" />
+                      <Input 
+                        placeholder="Doe" 
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        required
+                      />
                     </div>
                   </div>
                 </div>
@@ -146,22 +227,37 @@ const Booking = () => {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm text-muted-foreground mb-2 block">Email</label>
-                    <Input type="email" placeholder="john@example.com" />
+                    <Input 
+                      type="email" 
+                      placeholder="john@example.com" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground mb-2 block">Phone</label>
-                    <Input type="tel" placeholder="+1 (555) 123-4567" />
+                    <Input 
+                      type="tel" 
+                      placeholder="+1 (555) 123-4567" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
                   </div>
                 </div>
 
                 {/* Special Requests */}
                 <div>
                   <label className="text-sm text-muted-foreground mb-2 block">Special Requests (Optional)</label>
-                  <Input placeholder="Any special requirements or requests?" />
+                  <Input 
+                    placeholder="Any special requirements or requests?" 
+                    value={specialRequests}
+                    onChange={(e) => setSpecialRequests(e.target.value)}
+                  />
                 </div>
 
-                <Button type="submit" className="w-full" size="lg">
-                  Confirm Reservation
+                <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                  {loading ? "Creating Reservation..." : "Confirm Reservation"}
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center">
