@@ -8,9 +8,8 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "Home", href: "/" },
-    { name: "Rooms", href: "#rooms" },
-    { name: "Restaurant", href: "#restaurant" },
-    { name: "Contact", href: "#contact" },
+    { name: "Booking", href: "/booking" },
+    { name: "Contact", href: "/contact" },
   ];
 
   return (
@@ -27,17 +26,19 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.name}
-                href={link.href}
+                to={link.href}
                 className="text-foreground/80 hover:text-primary transition-colors duration-300 text-sm tracking-wide"
               >
                 {link.name}
-              </a>
+              </Link>
             ))}
-            <Button variant="default" size="sm">
-              Book Now
-            </Button>
+            <Link to="/booking">
+              <Button variant="default" size="sm">
+                Book Now
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -54,18 +55,20 @@ const Navbar = () => {
           <div className="md:hidden pt-4 pb-2 animate-fade-in">
             <div className="flex flex-col gap-4">
               {navLinks.map((link) => (
-                <a
+                <Link
                   key={link.name}
-                  href={link.href}
+                  to={link.href}
                   className="text-foreground/80 hover:text-primary transition-colors py-2"
                   onClick={() => setIsOpen(false)}
                 >
                   {link.name}
-                </a>
+                </Link>
               ))}
-              <Button variant="default" size="sm" className="w-fit">
-                Book Now
-              </Button>
+              <Link to="/booking" onClick={() => setIsOpen(false)}>
+                <Button variant="default" size="sm" className="w-fit">
+                  Book Now
+                </Button>
+              </Link>
             </div>
           </div>
         )}

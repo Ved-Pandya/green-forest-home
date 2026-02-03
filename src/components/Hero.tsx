@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import heroImage from "@/assets/hero-forest.jpg";
+import { Link } from "react-router-dom";
+import heroImage from "@/assets/resort-aerial.png";
 
 const Hero = () => {
   return (
@@ -28,12 +29,16 @@ const Hero = () => {
             Escape to nature's embrace. Experience tranquility, luxury, and sustainable living in the heart of the forest.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="hero" size="lg">
-              Explore Rooms
-            </Button>
-            <Button variant="heroOutline" size="lg">
-              View Restaurant
-            </Button>
+            <Link to="/booking">
+              <Button variant="hero" size="lg">
+                Book Now
+              </Button>
+            </Link>
+            <Link to="/contact">
+              <Button variant="heroOutline" size="lg">
+                Contact Us
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
