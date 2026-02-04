@@ -1,164 +1,101 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
-import { Calendar, Users, Home, Plus } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { Calendar, Users, Home } from "lucide-react";
 
-interface Booking {
+interface BookingData {
   id: string;
-  room_type: string;
-  guests: number;
   check_in: string;
   check_out: string;
+  guests: number;
+  room_type: string;
   status: string;
-  created_at: string;
 }
-
-const roomTypeLabels: Record<string, string> = {
-  standard: "Standard Room",
-  deluxe: "Deluxe Room",
-  suite: "Forest Suite",
-  villa: "Private Villa",
-};
 
 const MyBookings = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<BookingData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
+      return;
     }
-  }, [user, authLoading, navigate]);
 
-  useEffect(() => {
     const fetchBookings = async () => {
       if (!user) return;
-      
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("*")
-        .order("check_in", { ascending: true });
-
-      if (!error && data) {
-        setBookings(data);
+      try {
+        const q = query(collection(db, "bookings"), where("user_id", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+        const bookingsData: BookingData[] = [];
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          bookingsData.push({
+            id: doc.id,
+            check_in: data.check_in,
+            check_out: data.check_out,
+            guests: data.guests,
+            room_type: data.room_type,
+            status: data.status,
+          });
+        });
+        setBookings(bookingsData);
+      } catch (error) {
+        console.error("Error fetching bookings:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
-    if (user) {
-      fetchBookings();
-    }
-  }, [user]);
+    fetchBookings();
+  }, [user, authLoading, navigate]);
 
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
+  if (loading || authLoading) {
+    return <div className="min-h-screen flex items-center justify-center"><p>Loading...</p></div>;
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <Navbar />
-      
-      <section className="pt-24 pb-16 bg-secondary">
+      <section className="pt-24 pb-12 bg-secondary/30">
         <div className="container mx-auto px-6 text-center">
-          <h1 className="font-serif text-4xl md:text-5xl text-foreground mb-4">
-            My Bookings
-          </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            View and manage your upcoming reservations at Green Forest.
-          </p>
+          <h1 className="font-serif text-4xl text-foreground mb-4">My Bookings</h1>
         </div>
       </section>
 
-      <section className="py-16">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto">
-            {bookings.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="bg-card p-8 rounded-lg shadow-elegant">
-                  <Home className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h2 className="font-serif text-2xl text-foreground mb-2">
-                    No Bookings Yet
-                  </h2>
-                  <p className="text-muted-foreground mb-6">
-                    You haven't made any reservations yet. Start planning your escape to nature.
-                  </p>
-                  <Link to="/booking">
-                    <Button>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Make a Reservation
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="font-serif text-2xl text-foreground">
-                    Your Reservations
-                  </h2>
-                  <Link to="/booking">
-                    <Button>
-                      <Plus className="w-4 h-4 mr-2" />
-                      New Booking
-                    </Button>
-                  </Link>
-                </div>
-                
-                {bookings.map((booking) => (
-                  <Card key={booking.id} className="shadow-elegant">
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="font-serif text-xl">
-                          {roomTypeLabels[booking.room_type] || booking.room_type}
-                        </CardTitle>
-                        <Badge 
-                          variant={booking.status === "confirmed" ? "default" : "secondary"}
-                        >
-                          {booking.status}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid sm:grid-cols-3 gap-4 text-sm">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Calendar className="w-4 h-4" />
-                          <span>
-                            {format(new Date(booking.check_in), "MMM d")} - {format(new Date(booking.check_out), "MMM d, yyyy")}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Users className="w-4 h-4" />
-                          <span>{booking.guests} {booking.guests === 1 ? "Guest" : "Guests"}</span>
-                        </div>
-                        <div className="text-muted-foreground">
-                          Booked on {format(new Date(booking.created_at), "MMM d, yyyy")}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+      <section className="py-12 container mx-auto px-6 max-w-4xl">
+        {bookings.length === 0 ? (
+          <div className="text-center py-12 border rounded-lg bg-card">
+            <h3 className="text-xl font-medium mb-2">No bookings found</h3>
+            <Button onClick={() => navigate("/booking")}>Book a Room</Button>
           </div>
-        </div>
+        ) : (
+          <div className="grid gap-6">
+            {bookings.map((booking) => (
+              <div key={booking.id} className="bg-card p-6 rounded-lg border shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-lg font-semibold capitalize"><Home className="w-5 h-5 text-primary" />{booking.room_type}</div>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1"><Calendar className="w-4 h-4" />{booking.check_in} - {booking.check_out}</span>
+                    <span className="flex items-center gap-1"><Users className="w-4 h-4" />{booking.guests} Guests</span>
+                  </div>
+                </div>
+                <span className="px-3 py-1 rounded-full text-xs font-medium uppercase bg-green-100 text-green-800">{booking.status}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
-
       <Footer />
     </div>
   );
 };
-
 export default MyBookings;

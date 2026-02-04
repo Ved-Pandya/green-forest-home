@@ -5,33 +5,32 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
-import Contact from "./pages/Contact";
-import Booking from "./pages/Booking";
 import Auth from "./pages/Auth";
+import Booking from "./pages/Booking";
 import MyBookings from "./pages/MyBookings";
-import NotFound from "./pages/NotFound";
+import Admin from "./pages/Admin";
+import Restaurant from "./pages/Restaurant"; // <--- Imported here
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
+    <TooltipProvider>
+      <AuthProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/booking" element={<Booking />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/booking" element={<Booking />} />
             <Route path="/my-bookings" element={<MyBookings />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+            <Route path="/restaurant" element={<Restaurant />} /> {/* <--- Added here */}
+            <Route path="/admin" element={<Admin />} />
           </Routes>
         </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </TooltipProvider>
   </QueryClientProvider>
 );
 
